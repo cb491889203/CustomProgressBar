@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:coconut="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.handlecar.customprogressbar.MainActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hello World!"/>
+
+    <com.handlecar.customprogressbar.View.CustomProgressBar
+        android:id="@+id/my_cpb"
+        android:layout_centerInParent="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        coconut:reach_height="20dp"
+        coconut:reach_color="#B3EE3A"
+        coconut:unreach_color="#B0B0B0"
+        coconut:unreach_height="10dp"
+        coconut:text_size="12sp"
+        coconut:text_color="#B03060"
+        coconut:text_offset="10dp"
+        android:max="100"
+        />
+</RelativeLayout>
