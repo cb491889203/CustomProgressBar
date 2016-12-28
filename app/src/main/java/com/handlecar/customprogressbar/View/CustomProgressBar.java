@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.widget.ProgressBar;
 
@@ -16,6 +17,7 @@ import com.handlecar.customprogressbar.R;
  */
 public class CustomProgressBar extends ProgressBar {
 
+	private static final String TAG = "CustomProgressBar";
 	private static final int DEFAULT_REACH_COLOR = 0xFFA500;
 	private static final int DEFAULT_UNREACH_COLOR = 0XCDB38B;
 //	private static final int DEFAULT_REACH_HEIGHT = dp2px(10);
@@ -32,6 +34,7 @@ public class CustomProgressBar extends ProgressBar {
 	private int textColor;
 	private Paint mPaint;
 	private float baseLineHeight;
+	private int mRealWidth;
 
 	public CustomProgressBar(Context context) {
 		this(context, null);
@@ -69,9 +72,13 @@ public class CustomProgressBar extends ProgressBar {
 		if (heightSpecMode == MeasureSpec.EXACTLY) {
 			height = heightSpecSize;
 		} else {
-			baseLineHeight = -(mPaint.descent() + mPaint.ascent()) / 2;
-			height = (int) (getPaddingBottom() + getPaddingTop() + Math.max(Math.max(reachHeight, unreachHeight), baseLineHeight));
+			int textHeight = (int) (mPaint.descent() - mPaint.ascent());
+			height = (int) (getPaddingBottom() + getPaddingTop() + Math.max(Math.max(reachHeight, unreachHeight), textHeight));
+			if (heightSpecMode == MeasureSpec.AT_MOST) {
+				height = Math.min(height, heightSpecSize);
+			}
 		}
+		mRealWidth = width - getPaddingLeft() - getPaddingRight();
 		setMeasuredDimension(widthSpecSize, height);
 	}
 
@@ -83,8 +90,9 @@ public class CustomProgressBar extends ProgressBar {
 		int mProgress = getProgress();
 		int mMaxProgress = getMax();
 		int mRatio = (int) (((float) mProgress) / mMaxProgress * 100);
+		Log.i(TAG, "onDraw: mProgress = " + mProgress + " ; mMaxProgress = " + mMaxProgress + " ; mRatio = " + mRatio);
 		/** 进度条总宽度 */
-		int progressTotalWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+		int progressTotalWidth = mRealWidth;
 		int mReachedWidth = (int) (progressTotalWidth * mRatio / 100);
 		//进度字符串
 		String mRatioStr = mRatio + "%";
@@ -96,7 +104,7 @@ public class CustomProgressBar extends ProgressBar {
 		mPaint.setColor(reachColor);
 		if (mReachedWidth + textOffset * 2 + textWidth > progressTotalWidth) {
 			//已经划到进度的最后了
-			mReachedWidth = (int) (getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - textOffset - textWidth);
+			mReachedWidth = (int) (progressTotalWidth - textOffset * 2 - textWidth);
 			canvas.drawLine(0, 0, mReachedWidth, 0, mPaint);
 		} else {
 			canvas.drawLine(0, 0, mReachedWidth, 0, mPaint);
@@ -104,6 +112,8 @@ public class CustomProgressBar extends ProgressBar {
 
 		//画进度百分比文字
 		mPaint.setColor(textColor);
+		Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
+		baseLineHeight = -(fontMetrics.top + fontMetrics.bottom)/2;
 		canvas.drawText(mRatioStr, mReachedWidth + textOffset, baseLineHeight, mPaint);
 
 		//画未完成的进度条
