@@ -7,11 +7,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.handlecar.customprogressbar.MainActivity">
-
-    <TextView
-        android:layout_width="wrap_content"
+    <com.handlecar.customprogressbar.View.CustomProgressBar
+        android:id="@+id/my_cpb3"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!"/>
+        android:background="#33333333"
+        android:max="200"
+        android:progress="20"
+        android:padding="20dp"
+        coconut:progress_style="circle"
+        coconut:radius="50dp"
+        coconut:begin_angle="860"
+        coconut:reach_color="#A52A2A"
+        coconut:reach_height="4dp"
+        coconut:text_color="#867453"
+        coconut:text_offset="2dp"
+        coconut:text_size="12sp"
+        coconut:unreach_color="#B0C4DE"
+        coconut:unreach_height="2dp"
+        />
+
 
     <com.handlecar.customprogressbar.View.CustomProgressBar
         android:id="@+id/my_cpb"
@@ -19,9 +34,11 @@
         android:layout_height="50dp"
         android:layout_centerInParent="true"
         android:max="100"
+        android:progress="30"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"
-        coconut:reach_color="#B3EE3A"
+        coconut:progress_style="horizonal"
+        coconut:reach_color="#218868"
         coconut:reach_height="5dp"
         coconut:text_color="#B03060"
         coconut:text_offset="2dp"
@@ -40,8 +57,9 @@
         android:max="100"
         android:progress="50"
         android:padding="20dp"
-        coconut:reach_color="#B3EE3A"
-        coconut:reach_height="5dp"
+        coconut:progress_style="horizonal"
+        coconut:reach_color="#EE7600"
+        coconut:reach_height="3dp"
         coconut:text_color="#867453"
         coconut:text_offset="2dp"
         coconut:text_size="12sp"

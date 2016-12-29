@@ -11,12 +11,15 @@ public class MainActivity extends AppCompatActivity {
 
 	private CustomProgressBar my_cpb;
 	private Handler mHandler;
+	private Handler mHandler3;
+	private CustomProgressBar my_cpb3;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		my_cpb = (CustomProgressBar) findViewById(R.id.my_cpb);
+		my_cpb3 = (CustomProgressBar) findViewById(R.id.my_cpb3);
 	}
 
 	@Override
@@ -26,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 			@Override
 			public void handleMessage(Message msg) {
 				super.handleMessage(msg);
-				my_cpb.setProgress(msg.arg1);
+				my_cpb.setProgress(msg.arg1 + 1);
 			}
 		};
 
@@ -35,14 +38,24 @@ public class MainActivity extends AppCompatActivity {
 			public void run() {
 				for (int i = 0; i < 100; i++) {
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(500);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 					Message message = mHandler.obtainMessage(1, i, 0);
+					Message message3 = mHandler.obtainMessage(1, i, 0);
 					mHandler.sendMessage(message);
+					mHandler3.sendMessage(message3);
 				}
 			}
 		}).start();
+
+		mHandler3 = new Handler(){
+			@Override
+			public void handleMessage(Message msg) {
+				super.handleMessage(msg);
+				my_cpb3.setProgress(msg.arg1 + 1);
+			}
+		};
 	}
 }
