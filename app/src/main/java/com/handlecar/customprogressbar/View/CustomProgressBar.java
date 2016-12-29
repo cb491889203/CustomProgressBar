@@ -3,8 +3,11 @@ package com.handlecar.customprogressbar.View;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -29,20 +32,24 @@ public class CustomProgressBar extends ProgressBar {
 	private static final int DEFAULT_RADIUS = 20;
 	private static final float DEFAULT_BEGIN_ANGLE = 0.0f;
 	private static final int DEFUALT_STYLE = 0;
-	/** 进度条样式, 0: 横向进度; 1:圆形进度 , 默认为0*/
+	private static final int DEFAULT_BEGIN_COLOR = 0xFF0000;
+	private static final int DEFAULT_END_COLOR = 0x00FF00;
+	/** 进度条样式, 0: 横向进度; 1:圆形进度 , 默认为0 */
 	private int mStyle;
 	private int mRadius;
 	private float mBeginAngle;
-	private int reachColor;
-	private int unreachColor;
-	private int reachHeight;
-	private int unreachHeight;
-	private int textSize;
-	private int textOffset;
-	private int textColor;
+	private int mReachColor;
+	private int mUnreachColor;
+	private int mReachHeight;
+	private int mUnreachHeight;
+	private int mTextSize;
+	private int mTextOffset;
+	private int mTextColor;
 	private Paint mPaint;
-	private float baseLineHeight;
+	private float mBaseLineHeight;
 	private int mRealWidth;
+	private int mBeginColor;
+	private int mEndColor;
 
 	public CustomProgressBar(Context context) {
 		this(context, null);
@@ -57,19 +64,21 @@ public class CustomProgressBar extends ProgressBar {
 		super(context, attrs, defStyleAttr);
 		TypedArray ta = getContext().obtainStyledAttributes(attrs, R.styleable.CustomProgressBarStyle);
 		mStyle = ta.getInt(R.styleable.CustomProgressBarStyle_progress_style, DEFUALT_STYLE);
-		reachColor = ta.getColor(R.styleable.CustomProgressBarStyle_reach_color, DEFAULT_REACH_COLOR);
-		unreachColor = ta.getColor(R.styleable.CustomProgressBarStyle_unreach_color, DEFAULT_UNREACH_COLOR);
-		reachHeight = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_reach_height, dp2px(DEFAULT_REACH_HEIGHT));
-		unreachHeight = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_unreach_height, dp2px(DEFAULT_UNREACH_HEIGHT));
-		textSize = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_text_size, sp2px(DEFAULT_TEXT_SIZE));
-		textOffset = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_text_offset, dp2px(DEFAULT_TEXT_OFFSET));
-		textColor = ta.getColor(R.styleable.CustomProgressBarStyle_text_color, DEFAULT_TEXT_COLOR);
+		mReachColor = ta.getColor(R.styleable.CustomProgressBarStyle_reach_color, DEFAULT_REACH_COLOR);
+		mUnreachColor = ta.getColor(R.styleable.CustomProgressBarStyle_unreach_color, DEFAULT_UNREACH_COLOR);
+		mReachHeight = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_reach_height, dp2px(DEFAULT_REACH_HEIGHT));
+		mUnreachHeight = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_unreach_height, dp2px(DEFAULT_UNREACH_HEIGHT));
+		mTextSize = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_text_size, sp2px(DEFAULT_TEXT_SIZE));
+		mTextOffset = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_text_offset, dp2px(DEFAULT_TEXT_OFFSET));
+		mTextColor = ta.getColor(R.styleable.CustomProgressBarStyle_text_color, DEFAULT_TEXT_COLOR);
 		mRadius = ta.getDimensionPixelSize(R.styleable.CustomProgressBarStyle_radius, dp2px(DEFAULT_RADIUS));
 		mBeginAngle = ta.getFloat(R.styleable.CustomProgressBarStyle_begin_angle, DEFAULT_BEGIN_ANGLE) % 360;
+		mBeginColor = ta.getColor(R.styleable.CustomProgressBarStyle_begin_color, 0);
+		mEndColor = ta.getColor(R.styleable.CustomProgressBarStyle_end_color, 0);
 		ta.recycle();
 		mPaint = new Paint();
 		mPaint.setAntiAlias(true);
-		mPaint.setTextSize(textSize);
+		mPaint.setTextSize(mTextSize);
 
 	}
 
@@ -82,7 +91,9 @@ public class CustomProgressBar extends ProgressBar {
 		}
 	}
 
-	/** 测量圆形的进度条
+	/**
+	 测量圆形的进度条
+
 	 @param widthMeasureSpec
 	 @param heightMeasureSpec
 	 */
@@ -97,7 +108,7 @@ public class CustomProgressBar extends ProgressBar {
 		if (widthSpecMode == MeasureSpec.EXACTLY) {
 			width = widthSpecSize;
 		} else {
-			width = getPaddingLeft() + getPaddingRight() + mRadius * 2 + Math.max(reachHeight, unreachHeight);
+			width = getPaddingLeft() + getPaddingRight() + mRadius * 2 + Math.max(mReachHeight, mUnreachHeight);
 			if (widthSpecMode == MeasureSpec.AT_MOST) {
 				width = Math.min(width, widthSpecSize);
 			}
@@ -106,7 +117,7 @@ public class CustomProgressBar extends ProgressBar {
 		if (heightSpecMode == MeasureSpec.EXACTLY) {
 			height = heightSpecSize;
 		} else {
-			height = getPaddingBottom() + getPaddingTop() + mRadius * 2 + Math.max(reachHeight, unreachHeight);
+			height = getPaddingBottom() + getPaddingTop() + mRadius * 2 + Math.max(mReachHeight, mUnreachHeight);
 			if (heightSpecMode == MeasureSpec.AT_MOST) {
 				height = Math.min(height, heightSpecSize);
 			}
@@ -115,7 +126,9 @@ public class CustomProgressBar extends ProgressBar {
 		setMeasuredDimension(width, height);
 	}
 
-	/** 测量横向的进度条
+	/**
+	 测量横向的进度条
+
 	 @param widthMeasureSpec
 	 @param heightMeasureSpec
 	 */
@@ -130,7 +143,7 @@ public class CustomProgressBar extends ProgressBar {
 			height = heightSpecSize;
 		} else {
 			int textHeight = (int) (mPaint.descent() - mPaint.ascent());
-			height = (int) (getPaddingBottom() + getPaddingTop() + Math.max(Math.max(reachHeight, unreachHeight), textHeight));
+			height = (int) (getPaddingBottom() + getPaddingTop() + Math.max(Math.max(mReachHeight, mUnreachHeight), textHeight));
 			if (heightSpecMode == MeasureSpec.AT_MOST) {
 				height = Math.min(height, heightSpecSize);
 			}
@@ -148,7 +161,9 @@ public class CustomProgressBar extends ProgressBar {
 		}
 	}
 
-	/** 绘制圆形的进度条
+	/**
+	 绘制圆形的进度条
+
 	 @param canvas
 	 */
 	private void drawCircleStyle(Canvas canvas) {
@@ -164,30 +179,31 @@ public class CustomProgressBar extends ProgressBar {
 		//文字的宽度
 		float textWidth = mPaint.measureText(mRatioStr);
 		//画进度百分比文字
-		mPaint.setColor(textColor);
+		mPaint.setColor(mTextColor);
 		mPaint.setStyle(Paint.Style.FILL);
 		Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
-		baseLineHeight = -(fontMetrics.top + fontMetrics.bottom)/2;
-		canvas.drawText(mRatioStr, -textWidth / 2, baseLineHeight, mPaint);
+		mBaseLineHeight = -(fontMetrics.top + fontMetrics.bottom) / 2;
+		canvas.drawText(mRatioStr, -textWidth / 2, mBaseLineHeight, mPaint);
 
 		//画未完成的底色
-		mPaint.setColor(unreachColor);
-		mPaint.setStrokeWidth(unreachHeight);
+		mPaint.setColor(mUnreachColor);
+		mPaint.setStrokeWidth(mUnreachHeight);
 		mPaint.setStyle(Paint.Style.STROKE);
-		canvas.drawCircle(0,0,mRadius,mPaint);
+		canvas.drawCircle(0, 0, mRadius, mPaint);
 
 		//画已完成的进度条
 		//圆弧的区域是中间圆圈的范围
 		RectF rectF = new RectF(-mRadius, -mRadius, mRadius, mRadius);
-		mPaint.setColor(reachColor);
-		mPaint.setStrokeWidth(reachHeight);
+		mPaint.setColor(mReachColor);
+		mPaint.setStrokeWidth(mReachHeight);
 		canvas.drawArc(rectF, mBeginAngle, mRatio * 360 / 100, false, mPaint);
 
 		canvas.restore();
 	}
 
 	/**
-	  绘制横向的进度条
+	 绘制横向的进度条
+
 	 @param canvas
 	 */
 	private void drawHorizonalStyle(Canvas canvas) {
@@ -206,30 +222,76 @@ public class CustomProgressBar extends ProgressBar {
 		float textWidth = mPaint.measureText(mRatioStr);
 
 		//画已经完成的进度
-		mPaint.setStrokeWidth(reachHeight);
-		mPaint.setColor(reachColor);
-		if (mReachedWidth + textOffset * 2 + textWidth > progressTotalWidth) {
+		mPaint.setStrokeWidth(mReachHeight);
+		if (mReachedWidth + mTextOffset * 2 + textWidth > progressTotalWidth) {
 			//已经划到进度的最后了
-			mReachedWidth = (int) (progressTotalWidth - textOffset * 2 - textWidth);
-			canvas.drawLine(0, 0, mReachedWidth, 0, mPaint);
-		} else {
-			canvas.drawLine(0, 0, mReachedWidth, 0, mPaint);
+			mReachedWidth = (int) (progressTotalWidth - mTextOffset * 2 - textWidth);
 		}
+		//设置了渐变色 ,就使用渐变色
+		Log.i(TAG, "drawHorizonalStyle: mBeginColor = " + mBeginColor + " ; mEndColor = " + mEndColor);
+		if (mBeginColor != 0 || mEndColor != 0) {
+			Shader mShader = new LinearGradient(0, 0, mReachedWidth, 0, mBeginColor, getColor(mRatio), Shader.TileMode.MIRROR);
+//			Shader mShader = new LinearGradient(0, 0, progressTotalWidth, 0, mBeginColor, mEndColor, Shader.TileMode.MIRROR);
+			mPaint.setShader(mShader);
+		} else {
+			mPaint.setColor(mReachColor);
+		}
+		canvas.drawLine(0, 0, mReachedWidth, 0, mPaint);
 
 		//画进度百分比文字
-		mPaint.setColor(textColor);
+		if (mBeginColor > 0 || mEndColor > 0) { //设置了渐变色 ,就使用渐变色
+			mPaint.setColor(getColor(mRatio));
+		} else {
+			mPaint.setColor(mTextColor);
+		}
 		Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
-		baseLineHeight = -(fontMetrics.top + fontMetrics.bottom)/2;
-		canvas.drawText(mRatioStr, mReachedWidth + textOffset, baseLineHeight, mPaint);
+		mBaseLineHeight = -(fontMetrics.top + fontMetrics.bottom) / 2;
+		canvas.drawText(mRatioStr, mReachedWidth + mTextOffset, mBaseLineHeight, mPaint);
 
 		//画未完成的进度条
-		mPaint.setColor(unreachColor);
-		mPaint.setStrokeWidth(unreachHeight);
-		if (mReachedWidth + textOffset * 2 + textWidth < progressTotalWidth) {
-			canvas.drawLine(mReachedWidth + textOffset * 2 + textWidth, 0, progressTotalWidth, 0, mPaint);
+		mPaint.setColor(mUnreachColor);
+		mPaint.setShader(null);
+		mPaint.setStrokeWidth(mUnreachHeight);
+		if (mReachedWidth + mTextOffset * 2 + textWidth < progressTotalWidth) {
+			canvas.drawLine(mReachedWidth + mTextOffset * 2 + textWidth, 0, progressTotalWidth, 0, mPaint);
 		}
 
 		canvas.restore();
+	}
+
+	/**
+	 * 设置渐变色的paint color或者添加shader
+	 */
+	public void setmPaintColor(int color) {
+		if (mBeginColor > 0 || mEndColor > 0) { //设置了渐变色 ,就使用渐变色
+		} else {
+			mPaint.setColor(color);
+		}
+	}
+
+	public void setStartColor(int startColor) {
+		this.mBeginColor = startColor;
+	}
+
+	public void setEndColor(int endColor) {
+		this.mEndColor = endColor;
+	}
+
+	public int getColor(float radio) {
+		radio = (float) radio / 100;
+		mBeginColor = mBeginColor == 0 ? DEFAULT_BEGIN_COLOR : mBeginColor;
+		mEndColor = mEndColor == 0 ? DEFAULT_END_COLOR : mEndColor;
+		int redStart = Color.red(mBeginColor);
+		int blueStart = Color.blue(mBeginColor);
+		int greenStart = Color.green(mBeginColor);
+		int redEnd = Color.red(mEndColor);
+		int blueEnd = Color.blue(mEndColor);
+		int greenEnd = Color.green(mEndColor);
+
+		int red = (int) (redStart + ((redEnd - redStart) * radio + 0.5));
+		int greed = (int) (greenStart + ((greenEnd - greenStart) * radio + 0.5));
+		int blue = (int) (blueStart + ((blueEnd - blueStart) * radio + 0.5));
+		return Color.argb(255, red, greed, blue);
 	}
 
 	private int dp2px(int dpVal) {

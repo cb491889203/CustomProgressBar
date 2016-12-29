@@ -13,6 +13,10 @@
         <attr name="unreach_height" format="dimension"/>
         <attr name="text_color" format="color"/>
         <attr name="text_size" format="dimension"/>
+        <!--字体与进度条中间的间隙-->
         <attr name="text_offset" format="dimension"/>
+        <attr name="begin_color" format="color"/>
+        <attr name="end_color" format="color"/>
+
     </declare-styleable>
 </resources>
