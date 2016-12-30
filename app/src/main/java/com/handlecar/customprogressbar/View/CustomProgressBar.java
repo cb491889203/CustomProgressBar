@@ -8,6 +8,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Shader;
+import android.graphics.SweepGradient;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -34,22 +35,40 @@ public class CustomProgressBar extends ProgressBar {
 	private static final int DEFUALT_STYLE = 0;
 	private static final int DEFAULT_BEGIN_COLOR = 0xFF0000;
 	private static final int DEFAULT_END_COLOR = 0x00FF00;
+	/** 普通画笔,绘制同一种颜色 */
+	private Paint mPaint;
+	/** 渐变颜色画笔,,绘制进度条渐变 */
+	private Paint mShaderPaint;
 	/** 进度条样式, 0: 横向进度; 1:圆形进度 , 默认为0 */
 	private int mStyle;
+	/** 圆形进度条的半径 */
 	private int mRadius;
+	/** 圆形进度条开始的角度 */
 	private float mBeginAngle;
+	/** 已完成进度的颜色 */
 	private int mReachColor;
+	/** 未完成进度的颜色 */
 	private int mUnreachColor;
+	/** 已完成进度的高度 */
 	private int mReachHeight;
+	/** 未完成进度的高度 */
 	private int mUnreachHeight;
+	/** 字体大小 */
 	private int mTextSize;
+	/** 字体与进度条之间的空隙 */
 	private int mTextOffset;
+	/** 字体颜色 */
 	private int mTextColor;
-	private Paint mPaint;
+	/** 绘制字体时的基准线高度 */
 	private float mBaseLineHeight;
+	/** 进度条真实的宽度,只在横向进度条时使用 */
 	private int mRealWidth;
+	/** 进度条开始的颜色,只在圆形进度条使用 */
 	private int mBeginColor;
+	/** 进度条结束的颜色,只在圆形进度条使用 */
 	private int mEndColor;
+	/** 是否为渐变色风格 */
+	private boolean isShade;
 
 	public CustomProgressBar(Context context) {
 		this(context, null);
@@ -76,10 +95,20 @@ public class CustomProgressBar extends ProgressBar {
 		mBeginColor = ta.getColor(R.styleable.CustomProgressBarStyle_begin_color, 0);
 		mEndColor = ta.getColor(R.styleable.CustomProgressBarStyle_end_color, 0);
 		ta.recycle();
+		setColors(); //设置是否为渐变色.并设置颜色
+		initPaint();
+		initPaint();
+	}
+
+	private void initPaint() {
 		mPaint = new Paint();
 		mPaint.setAntiAlias(true);
 		mPaint.setTextSize(mTextSize);
-
+		mPaint.setStrokeCap(Paint.Cap.ROUND);//设置为圆角
+		mShaderPaint = new Paint();
+		mShaderPaint.setAntiAlias(true);
+		mShaderPaint.setStyle(Paint.Style.STROKE);
+		mShaderPaint.setStrokeCap(Paint.Cap.ROUND);
 	}
 
 	@Override
@@ -178,12 +207,6 @@ public class CustomProgressBar extends ProgressBar {
 		String mRatioStr = mRatio + "%";
 		//文字的宽度
 		float textWidth = mPaint.measureText(mRatioStr);
-		//画进度百分比文字
-		mPaint.setColor(mTextColor);
-		mPaint.setStyle(Paint.Style.FILL);
-		Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
-		mBaseLineHeight = -(fontMetrics.top + fontMetrics.bottom) / 2;
-		canvas.drawText(mRatioStr, -textWidth / 2, mBaseLineHeight, mPaint);
 
 		//画未完成的底色
 		mPaint.setColor(mUnreachColor);
@@ -192,11 +215,41 @@ public class CustomProgressBar extends ProgressBar {
 		canvas.drawCircle(0, 0, mRadius, mPaint);
 
 		//画已完成的进度条
+		//保存canvas,旋转起始角度
+		canvas.save();
+		canvas.rotate(mBeginAngle);
+		//设置渐变色或固定色
+		if (isShade) {
+			Shader mShader = new SweepGradient(0, 0, new int[]{mBeginColor, mEndColor}, null);
+			mShaderPaint.setShader(mShader);
+			mShaderPaint.setStrokeWidth(mReachHeight);
+		} else {
+			mPaint.setColor(mReachColor);
+			mPaint.setStrokeWidth(mReachHeight);
+		}
 		//圆弧的区域是中间圆圈的范围
 		RectF rectF = new RectF(-mRadius, -mRadius, mRadius, mRadius);
-		mPaint.setColor(mReachColor);
-		mPaint.setStrokeWidth(mReachHeight);
-		canvas.drawArc(rectF, mBeginAngle, mRatio * 360 / 100, false, mPaint);
+//		canvas.drawArc(rectF, mBeginAngle, mRatio * 360 / 100, false, mPaint);
+		if (isShade) {
+			canvas.drawArc(rectF, 2, mRatio * 360 / 100 + 2, false, mShaderPaint);
+		} else {
+			canvas.drawArc(rectF, 2, mRatio * 360 / 100 + 2, false, mPaint);
+		}
+		canvas.restore();
+
+		//画进度百分比文字
+		if (isShade) {
+			mPaint.setColor(getColor(mRatio)); //动态获取渐变色
+		} else {
+			mPaint.setColor(mTextColor); //没有渐变色,设置为固定色
+		}
+		mPaint.setStyle(Paint.Style.FILL);
+		Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
+		mBaseLineHeight = -(fontMetrics.top + fontMetrics.bottom) / 2;
+		canvas.drawText(mRatioStr, -textWidth / 2, mBaseLineHeight, mPaint);
+
+
+
 
 		canvas.restore();
 	}
@@ -229,17 +282,18 @@ public class CustomProgressBar extends ProgressBar {
 		}
 		//设置了渐变色 ,就使用渐变色
 		Log.i(TAG, "drawHorizonalStyle: mBeginColor = " + mBeginColor + " ; mEndColor = " + mEndColor);
-		if (mBeginColor != 0 || mEndColor != 0) {
-			Shader mShader = new LinearGradient(0, 0, mReachedWidth, 0, mBeginColor, getColor(mRatio), Shader.TileMode.MIRROR);
-//			Shader mShader = new LinearGradient(0, 0, progressTotalWidth, 0, mBeginColor, mEndColor, Shader.TileMode.MIRROR);
+		if (isShade) {
+			// 这种设置是动态设置当前的位置,再根据当前位置取获取渐变色的结束颜色.
+			// Shader mShader = new LinearGradient(0, 0, mReachedWidth, 0, mBeginColor, getColor(mRatio), Shader.TileMode.MIRROR);
+			//这种设置是直接设置起始点到终点的颜色渐变路径,然后直接画就行了.
+			Shader mShader = new LinearGradient(0, 0, progressTotalWidth, 0, mBeginColor, mEndColor, Shader.TileMode.MIRROR);
 			mPaint.setShader(mShader);
-		} else {
-			mPaint.setColor(mReachColor);
 		}
+		mPaint.setColor(mReachColor);
 		canvas.drawLine(0, 0, mReachedWidth, 0, mPaint);
 
 		//画进度百分比文字
-		if (mBeginColor > 0 || mEndColor > 0) { //设置了渐变色 ,就使用渐变色
+		if (isShade) { //设置了渐变色 ,就使用渐变色
 			mPaint.setColor(getColor(mRatio));
 		} else {
 			mPaint.setColor(mTextColor);
@@ -260,27 +314,26 @@ public class CustomProgressBar extends ProgressBar {
 	}
 
 	/**
-	 * 设置渐变色的paint color或者添加shader
+	 设置渐变色的起始和终止颜色,如果有一个没有设置,则使用默认颜色, 如果都没有设置,则表示不使用渐变色风格.
 	 */
-	public void setmPaintColor(int color) {
-		if (mBeginColor > 0 || mEndColor > 0) { //设置了渐变色 ,就使用渐变色
+	public void setColors() {
+		if (mBeginColor != 0 || mEndColor != 0) {
+			isShade = true;
+			mBeginColor = mBeginColor == 0 ? DEFAULT_BEGIN_COLOR : mBeginColor;
+			mEndColor = mEndColor == 0 ? DEFAULT_END_COLOR : mEndColor;
 		} else {
-			mPaint.setColor(color);
+			isShade = false;
 		}
 	}
 
-	public void setStartColor(int startColor) {
-		this.mBeginColor = startColor;
-	}
+	/**
+	 根据当前的进度, 动态获取渐变色上面的当前颜色
 
-	public void setEndColor(int endColor) {
-		this.mEndColor = endColor;
-	}
-
+	 @param radio 当前进度, 数值百分比,在0-100之间.
+	 @return 当前进度上的颜色
+	 */
 	public int getColor(float radio) {
 		radio = (float) radio / 100;
-		mBeginColor = mBeginColor == 0 ? DEFAULT_BEGIN_COLOR : mBeginColor;
-		mEndColor = mEndColor == 0 ? DEFAULT_END_COLOR : mEndColor;
 		int redStart = Color.red(mBeginColor);
 		int blueStart = Color.blue(mBeginColor);
 		int greenStart = Color.green(mBeginColor);
