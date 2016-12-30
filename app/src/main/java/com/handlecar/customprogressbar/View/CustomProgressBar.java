@@ -231,9 +231,9 @@ public class CustomProgressBar extends ProgressBar {
 		RectF rectF = new RectF(-mRadius, -mRadius, mRadius, mRadius);
 //		canvas.drawArc(rectF, mBeginAngle, mRatio * 360 / 100, false, mPaint);
 		if (isShade) {
-			canvas.drawArc(rectF, 2, mRatio * 360 / 100 + 2, false, mShaderPaint);
+			canvas.drawArc(rectF, (float) Math.sqrt(mReachHeight), mRatio * 360 / 100 + (float) Math.sqrt(mReachHeight), false, mShaderPaint);
 		} else {
-			canvas.drawArc(rectF, 2, mRatio * 360 / 100 + 2, false, mPaint);
+			canvas.drawArc(rectF, 0, mRatio * 360 / 100 , false, mPaint);
 		}
 		canvas.restore();
 
@@ -247,10 +247,6 @@ public class CustomProgressBar extends ProgressBar {
 		Paint.FontMetrics fontMetrics = mPaint.getFontMetrics();
 		mBaseLineHeight = -(fontMetrics.top + fontMetrics.bottom) / 2;
 		canvas.drawText(mRatioStr, -textWidth / 2, mBaseLineHeight, mPaint);
-
-
-
-
 		canvas.restore();
 	}
 
